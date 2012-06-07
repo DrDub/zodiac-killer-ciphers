@@ -16,7 +16,7 @@ public class Search {
 	 */
 	public static void search(String dirCorpus, String dirZodiac, String dirTmp, int maxSubstringLength) {
 
-		MapBean bean = Processor.generateMap(dirZodiac, maxSubstringLength);
+		MapBean bean = Processor.generateMap(dirZodiac, maxSubstringLength, 1);
 		for (String key : bean.mapCounts.keySet()) {
 			//System.out.println("Map: " + key + ", " + map.get(key));
 			bean.mapCounts.put(key, 0); // reset counts since we are going to count corpus matches against Zodiac substrings
