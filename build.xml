@@ -13,6 +13,7 @@
 	</path>
 
 	<target name="build">
+		<mkdir dir="bin"/>
 		<javac verbose="false" srcdir="src" destdir="bin" classpathref="cp_build" debug="true" encoding="utf-8">
 			<include name="**/*.java"/>
 		</javac>
