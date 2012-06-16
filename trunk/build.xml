@@ -91,4 +91,14 @@
 		</java>
     </target>
 	
+    <target name="names" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.names.Census" classpathref="cp_run">
+		</java>
+    </target>
+	
+    <target name="lafferty" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.anagram.LaffertyZ13" classpathref="cp_run">
+		</java>
+    </target>
+	
 </project>
