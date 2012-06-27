@@ -7,3 +7,8 @@ sitting in a parked car with a .38.
 -12 SFPD-0
 The map coupled with this code will tell you where the bomb is set. You have 
 untill next Fall to dig it up. 
+
+0 is to be set to Mag. N.
+3
+6
+9

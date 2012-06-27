@@ -10,6 +10,18 @@ glory in killing a cop than a cid because a cop can shoot back. I have killed
 ten people to date. It would have been a lot more except that my bus bomb was a 
 dud. I was swamped out by the rain we had a while back.
 
+The new bomb is set up like this
+
+Sun light in early morning
+Bus
+Sun
+A B
+String of Bombs
+A
+Car Bat
+Timer
+B
+
 A + B are photoelectric
 swiches when sun beam
 is broken A closes circut
