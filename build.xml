@@ -14,8 +14,9 @@
 
 	<target name="build">
 		<mkdir dir="bin"/>
-		<javac verbose="false" srcdir="src" destdir="bin" classpathref="cp_build" debug="true" encoding="utf-8">
+		<javac verbose="false" srcdir="src" destdir="bin" classpathref="cp_build" debug="true" encoding="ISO-8859-1">
 			<include name="**/*.java"/>
+			<exclude name="cgp/**/*"/>
 		</javac>
 	</target>
 
@@ -29,7 +30,6 @@
     <target name="test_reader_list_zodiac" depends="build">
         <java fork="true" classname="com.zodiackillerciphers.corpus.Reader" classpathref="cp_run">
 			<arg value="${reader.corpus.zodiac}"/>
-			<arg value="${reader.max.substring.length}"/>
 		</java>
     </target>
 	
@@ -99,6 +99,18 @@
 	
     <target name="lafferty" depends="build">
         <java fork="true" classname="com.zodiackillerciphers.anagram.LaffertyZ13" classpathref="cp_run">
+		</java>
+    </target>
+	                                    
+	<!-- process the large corpus search results file -->
+    <target name="process_search_results" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.corpus.SearchResultsProcessor" classpathref="cp_run">
+			<arg value="${processor.index}"/>
+			<arg value="${processor.prefix.gutenberg}"/>
+			<arg value="${processor.length.min}"/>
+			<arg value="${reader.corpus.tmp}"/>
+			<arg value="${reader.corpus.zodiac}"/>
+			<jvmarg value="-Xmx2048M"/>
 		</java>
     </target>
 	
