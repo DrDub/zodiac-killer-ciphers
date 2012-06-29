@@ -1,9 +1,16 @@
 package com.zodiackillerciphers.corpus;
 
+import java.util.HashSet;
+import java.util.Set;
+
 
 public class InfoCount implements Comparable {
-	public int count = 0;
-	public String substring;
+	public int count = 0; // number of times this substring was found
+	public String substring; // the found substring
+	public Set<String> fileNames; // filenames in which the substring was found
+	public InfoCount() {
+		fileNames = new HashSet<String>();
+	}
 	@Override
 	public int compareTo(Object o) {
 		InfoCount a = this;
