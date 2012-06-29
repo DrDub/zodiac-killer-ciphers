@@ -24,7 +24,7 @@ public class Processor {
 				String textConverted = FileUtil.convert(text).toString();
 				bean.mapFiles.put(file, text);
 				System.out.println("File [" + file + "] Text [" + textConverted + "] Length [" + textConverted.length() + "]");
-				for (int n=minSubstringLength; n<(Math.min(textConverted.length(), maxSubstringLength)); n++) {
+				for (int n=minSubstringLength; n<(Math.min(textConverted.length()+1, maxSubstringLength)); n++) {
 					//if (n % 100 == 0) System.out.println(" - n = " + n);
 					for (int i=0; i<textConverted.length()-n+1; i++) {
 						String sub = textConverted.substring(i,i+n);
@@ -68,35 +68,106 @@ public class Processor {
 	}
 	
 	/** the map contains many substrings that are already contained by larger substrings.  only display the smaller ones if they have larger counts than the larger ones. */
-	public static void postProcess(MapBean bean) {
+	public static List<InfoCount> postProcess(MapBean bean) {
 		List<InfoCount> list = toList(bean.mapCounts);
 		System.out.println("Repeated substrings: " + list.size());
 		
+		list = postProcess(list);
+		
+		return list;
+	}
+	
+	public static List<InfoCount> postProcess(List<InfoCount> list) {
 		Map<String, InfoCount> seenMap = new HashMap<String, InfoCount>();
+		
+		int count = 0;
 		for (InfoCount info : list) {
 			// display info if:
 			// 1) this substring is not part of a larger substring, or
 			// 2) this substring is part of a larger substring and has a higher count than the larger substring
 			seen(seenMap, info);
+			count++;
+			if (count % 1000 == 0) System.out.println(count + " of " + list.size() + "...");
 		}
 		
 		List<InfoCount> sorted = new ArrayList<InfoCount>(seenMap.values());
 		Collections.sort(sorted);
-		
-		for (InfoCount info : sorted) {
+		return sorted;
+	}
+	
+	public static void dump(List<InfoCount> list, MapBean bean) {
+		for (InfoCount info : list) {
 			System.out.println(info);
 			System.out.println("{|");
 			System.out.println("|-valign=\"top\"");
 			System.out.println("! File");
 			System.out.println("! Match");
-
-			
 			for (File file : bean.mapFiles.keySet()) {
-				FileUtil.locate(info.substring, bean.mapFiles.get(file), file.getName(), 50);
+				FileUtil.locate(info.substring, bean.mapFiles.get(file), file.getName(), true, null, null, 50, false, null);
 			}
 			System.out.println("|}");
 		}
 	}
+
+	public static void dump2(List<InfoCount> list, String dirTmp, Map<String, String> zodiacCorpus, Map<String, IndexEntry> index, String gPrefix, boolean summaryOnly) {
+		
+		int count = 0; int total = 0;
+		for (InfoCount info : list) {
+			if (!summaryOnly) {
+				System.out.println(info);
+				
+				System.out.println("<div class=\"ztable\">");
+				System.out.println("{|");
+				System.out.println("|-valign=\"top\"");
+				System.out.println("! File");
+				System.out.println("! Match");
+			}
+			for (String key : zodiacCorpus.keySet()) {
+				boolean found = FileUtil.locate(info.substring, zodiacCorpus.get(key), key, true, null, null, 50, summaryOnly, info);
+				if (summaryOnly && found) break;
+			}
+			if (!summaryOnly) {
+				for (String file : info.fileNames) {
+					try {
+						File f = new File(file);
+						String text = Search.read(f, dirTmp);
+						String[] bib = infoFrom(file, index, gPrefix);
+						FileUtil.locate(info.substring, text, f.getName(), false, bib[1], bib[0], 50, false, null);
+					} catch (Exception e) {
+						System.out.println(e);
+						e.printStackTrace();
+					}
+				}
+				System.out.println("|}");
+				System.out.println("</div>");
+			}
+			
+			count+=info.fileNames.size(); 
+			total++;
+			
+			System.out.println("Processed " + total + " of " + list.size());
+			if (count >= 1000) {
+				System.out.println("PAGE BREAK");
+				count = 0;
+			}
+		}
+	}
+	
+	public static String[] infoFrom(String file, Map<String, IndexEntry> index, String gPrefix) {
+		String[] result = new String[] { "N/A", "N/A" };
+		
+		String key = null;
+		if (file.toLowerCase().startsWith(gPrefix.toLowerCase())) {
+			key = file.toLowerCase().substring(gPrefix.length());
+		}
+		System.out.println("key: " + key);
+		IndexEntry val = index.get(key);
+		if (val == null) return result;
+		result[0] = val.title;
+		result[1] = val.author;
+		return result;
+	}
+	
 	
 	/** update map of seen substrings.  keep only the best (non-spurious) substrings.
 	 */
@@ -160,7 +231,8 @@ public class Processor {
 			}
 		}*/
 		
-		postProcess(bean);
+		List<InfoCount> list = postProcess(bean);
+		dump(list, bean);
 		
 	}
 	

@@ -11,6 +11,8 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.zodiackillerciphers.corpus.InfoCount;
+
 public class FileUtil {
 	
 	public static File[] listFrom(String path) {
@@ -138,8 +140,9 @@ public class FileUtil {
 	}
 	
 	/** find the "streamed" (all caps) text by looking for it in unstreamed form in the given text */
-	public static void locate(String search, String text, String fileName, int N) {
+	public static boolean locate(String search, String text, String fileName, boolean linkLetters, String author, String title, int N, boolean summaryOnly, InfoCount summaryInfo) {
 		String upper = text.toUpperCase();
+		boolean found = false;
 		int index = 0; int first = 0; 
 		for (int i=0; i<upper.length(); i++) {
 			char ch = upper.charAt(i);
@@ -170,17 +173,40 @@ public class FileUtil {
 						suffix += text.substring(i+1, Math.min(text.length(), i+N+1));
 						if (i+N+1 < text.length()) suffix += "...";
 					}
-					System.out.println("|-valign=\"top\"");
-					System.out.println("| style=\"white-space: nowrap\"| [http://zodiac-killer-ciphers.googlecode.com/svn/trunk/letters/" + fileName + " " + fileName + "]");
-					System.out.println("| " + prefix + "'''[" + text.substring(first, i+1) + "]'''" + suffix + "");
+
+					found = true;
+					if (summaryOnly) {
+						System.out.println("Length: '''" + summaryInfo.substring.length() + "'''  Substring: '''[" + text.substring(first, i+1) + "]'''  Matches: '''" + summaryInfo.count + "'''");
+						return found;
+					}
+					
+					String match = prefix + "'''[" + text.substring(first, i+1) + "]'''" + suffix;
+					String fnDisplay = linkLetters ? "[http://zodiac-killer-ciphers.googlecode.com/svn/trunk/letters/" + fileName + " " + fileName + "]" : fileName; 
+					String css = "";
+					if (author != null || title != null) {
+						String line = "<span style=\"color: #2f4f4f;\">";
+						if (title != null) line += " '''Title''': <u>" + title + "</u>";
+						if (author != null) line += " '''Author''': <u>" + author + "</u>";
+						line += "</span><br><br>" + match;
+						System.out.println("|-valign=\"top\"");
+						System.out.println("| " + fnDisplay);
+						System.out.println("| " + line);
+						
+					} else {
+						System.out.println("|-valign=\"top\"");
+						css = "background-color: #ffdead";
+						System.out.println("| style=\"white-space: nowrap; " + css + "\"| " + fnDisplay);
+						System.out.println("| style=\"" + css + "\" | " + match + "");
+					}
 					index = 0; first = 0;
 				}
 			}
 		}
+		return found;
 		
 	}
 	
 	public static void main(String[] args) {
-		locate("PLEASEHELPMEICAN", "Dear Melvin This is the Zodiac speaking I wish you a happy Christmass. The one thing I ask  of you is this, please help me. I cannot reach out because of this thing in me  won't let me. I am finding it extreamly dificult to keep in check I am afraid I  will loose control again and take my nineth & posibly tenth victom. Please help  me I am drownding. At the moment the children are safe from the bomb because it  is so massive to dig in & the triger mech requires so much work to get it  adjusted just right. But if I hold back too long from no nine I will loose  complet all controol of my self & set the bomb up. Please help me I can not  remain in control for much longer.", "filename.txt", 50);
+		locate("PLEASEHELPMEICAN", "Dear Melvin This is the Zodiac speaking I wish you a happy Christmass. The one thing I ask  of you is this, please help me. I cannot reach out because of this thing in me  won't let me. I am finding it extreamly dificult to keep in check I am afraid I  will loose control again and take my nineth & posibly tenth victom. Please help  me I am drownding. At the moment the children are safe from the bomb because it  is so massive to dig in & the triger mech requires so much work to get it  adjusted just right. But if I hold back too long from no nine I will loose  complet all controol of my self & set the bomb up. Please help me I can not  remain in control for much longer.", "filename.txt", true, null, null, 50, false, null);
 	}
 }
