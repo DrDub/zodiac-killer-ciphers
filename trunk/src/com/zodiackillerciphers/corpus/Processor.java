@@ -153,6 +153,7 @@ public class Processor {
 		}
 	}
 	
+	// returns {title, author}
 	public static String[] infoFrom(String file, Map<String, IndexEntry> index, String gPrefix) {
 		String[] result = new String[] { "N/A", "N/A" };
 		
