@@ -25,6 +25,12 @@ public class FileUtil {
 		return null;
 	}
 	
+	/** return array of tokens */
+	public static String[] tokenize(String text) {
+		if (text == null) return null;
+		return text.split("[\\p{P} \\t\\n\\r]");
+	}
+	
 	/** return given list of Strings as stream of uppercase alphabetic letters only. */
 	public static String convert(List<String> list) {
 		StringBuffer sb = new StringBuffer();
