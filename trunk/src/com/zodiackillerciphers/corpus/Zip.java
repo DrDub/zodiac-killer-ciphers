@@ -28,10 +28,12 @@ public class Zip {
 		Enumeration entries;
 		ZipFile zipFile;
 		try {
+			System.out.println("new zipfile for " + file.getAbsolutePath());
 			zipFile = new ZipFile(file.getAbsolutePath());
 			entries = zipFile.entries();
 			while (entries.hasMoreElements()) {
 				ZipEntry entry = (ZipEntry) entries.nextElement();
+				System.out.println("- zip entry " + entry);
 				if (entry.isDirectory()) {
 					// Assume directories are stored parents first then
 					// children.

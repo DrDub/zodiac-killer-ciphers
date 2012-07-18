@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -32,9 +33,12 @@ public class LuceneService {
 	private static IndexSearcher is = null;
 	
 	public static boolean DEBUG = false;
+	public static String indexDir;
+	public static Version VERSION = Version.LUCENE_35;
+	static Analyzer analyzer = null;
+	static QueryParser parser = null;
 	
-	public LuceneService() {
-		init();
+	private LuceneService() {
 	}
 	
 	static void say(String msg) {
@@ -42,13 +46,33 @@ public class LuceneService {
 		System.out.println(d.getTime() + ": " + msg);
 	}
 	
+	public static Analyzer analyzer() {
+		if (analyzer == null)
+		analyzer = new StandardAnalyzer(LuceneService.VERSION, new HashSet<String>());
+		return analyzer;
+	}
+	
+	public static QueryParser parser() {
+		if (parser == null) 
+		parser = new QueryParser(LuceneService.VERSION, "word",
+				LuceneService.analyzer());
+		return parser;
+	}
+	
 	public static synchronized void init() {
+		throw new RuntimeException("Please supply an index directory");
+	}
+	
+	
+	
+	public static synchronized void init(String indexDir) {
+		LuceneService.indexDir = indexDir;
 		/** Create a single IndexSearcher for all threads.  This avoids the "too many files open" error, and other possible performance problems.
 		 * This method is synchronized because we don't want more than one thread initializing the IndexSearcher at the same time. */
 		if (is == null) {
 			try {
-				say("Creating new IndexSearcher");
-				Directory dir = FSDirectory.open(new File(DictionaryIndexer.ZODIAC_INDEX));
+				say("Creating new IndexSearcher for [" + indexDir + "]");
+				Directory dir = FSDirectory.open(new File(indexDir));
 				is = new IndexSearcher(dir, true);
 				say("Done creating new IndexSearcher");
 			} catch (Exception e) {
@@ -77,12 +101,12 @@ public class LuceneService {
 	}
 
 	public static Results query(String q, Object[] sort, int num) {
-		init();
+		init(indexDir);
 		Results results = new Results();
 		results.docs = new ArrayList<Document>();
 		try {
-			QueryParser parser = new QueryParser(Version.LUCENE_30,
-					"SEARCH_TEXT", new StandardAnalyzer(Version.LUCENE_30, new HashSet<String>()));
+			QueryParser parser = new QueryParser(VERSION,
+					"word", analyzer());
 			parser.setAllowLeadingWildcard(true);
 			Query query = parser.parse(q);
 			
@@ -113,12 +137,11 @@ public class LuceneService {
 	}
 
 	public static Results query(String q, Sort s, int num) {
-		init();
 		Results results = new Results();
 		results.docs = new ArrayList<Document>();
 		try {
-			QueryParser parser = new QueryParser(Version.LUCENE_30,
-					"SEARCH_TEXT", new StandardAnalyzer(Version.LUCENE_30, new HashSet<String>()));
+			QueryParser parser = new QueryParser(VERSION,
+					"SEARCH_TEXT", LuceneService.analyzer());
 			parser.setAllowLeadingWildcard(true);
 			Query query = parser.parse(q);
 			
@@ -178,7 +201,7 @@ public class LuceneService {
 		return value(d, "frequency");
 	}
 
-	static String value(Document d, String name) {
+	public static String value(Document d, String name) {
 		if (d==null) return null;
 		if (d.getFieldable(name) == null) return null;
 		return d.getFieldable(name).stringValue();
@@ -201,7 +224,7 @@ public class LuceneService {
 				"collecting", "of", "slaves", "for", "my", "afterlife",
 				"ebeorietemethhpiti" };
 		
-		init();
+		//init();
 		for (String s : z) {
 			Results r = query("word:"+s);
 			say(s+":");
@@ -217,7 +240,7 @@ public class LuceneService {
 	}
 	
 	public static void testRand() {
-		init();
+		//init();
 		
 		Object[][] counts = new Object[][] {
 				{"a", 82},
@@ -275,7 +298,7 @@ public class LuceneService {
 		
 	}
 	public static void testCipher(String cipher) {
-		init();
+		//init();
 		
 		String z = cipher;
 

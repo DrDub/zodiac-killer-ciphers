@@ -151,10 +151,10 @@ public class Ciphers {
 		new Cipher("Z408: Zodiac killer's solved 408 cipher, false positive high-scoring merge [KTWz]","9%P/Z/UB%kOR=pX=BKV+eGYF69HP@K!qYeMJY^UIk7qKtNQYD5)S(/9#BPORAU%fRlqEk^LMZJdr\\pFHVKe8Y@+qGD9KI)6qX85KS(RNtIYElO8qGBKQS#BLd/P#B@XqEHMU^RRkcZKqpI)Kq!85LMr9#BPDR+j=6\\N(eEUHkFZcpOVKI5+tL)l^R6HI9DR_KYr\\de/@XJQAP5M8RUt%L)NVEKH=GrI!Jk598LMlNA)Z(PKUpkA9#BVK\\+VKtOP^=SrlfUe67DKG%%IMNk)ScE/9%%ZfAP#BVpeXqKq_F#8c+@9A9B%OK5RUc+_dYq_^SqKVZeGYKE_KYA9%#Lt_H!FBX9KXADd\\7L!=q_ed##6e5PORXQF%GcZ@JKtq_8JI+rBPQK6VEXr9KI6qEHM)=UIk",Z408_SOLUTION),
 		new Cipher("Z408: Zodiac killer's solved 408 cipher, false positive high-scoring merge [Tj]","9%P/Z/UB%kOR=pX=BWV+eGYF69HP@K!qYeMJY^UIk7qTtNQYD5)S(/9#BPORAU%fRlqEk^LMZJdr\\pFHVWe8Y@+qGD9KI)6qX85zS(RNtIYElO8qGBTQS#BLd/P#B@XqEHMU^RRkcZKqpI)Wq!85LMr9#BPDR+T=6\\N(eEUHkFZcpOVWI5+tL)l^R6HI9DR_TYr\\de/@XJQAP5M8RUt%L)NVEKH=GrI!Jk598LMlNA)Z(PzUpkA9#BVW\\+VTtOP^=SrlfUe67DzG%%IMNk)ScE/9%%ZfAP#BVpeXqWq_F#8c+@9A9B%OT5RUc+_dYq_^SqWVZeGYKE_TYA9%#Lt_H!FBX9zXADd\\7L!=q_ed##6e5PORXQF%GcZ@JTtq_8JI+rBPQW6VEXr9WI6qEHM)=UIk",Z408_SOLUTION),
 		new Cipher("Z408: Zodiac killer's solved 408 cipher, false positive high-scoring merge [%fjq]","9%P/Z/UB%kOR=pX=BWV+eGYF69HP@K!%YeMJY^UIk7%TtNQYD5)S(/9#BPORAU%%Rl%Ek^LMZJdr\\pFHVWe8Y@+%GD9KI)6%X85zS(RNtIYElO8%GBTQS#BLd/P#B@X%EHMU^RRkcZK%pI)W%!85LMr9#BPDR+%=6\\N(eEUHkFZcpOVWI5+tL)l^R6HI9DR_TYr\\de/@XJQAP5M8RUt%L)NVEKH=GrI!Jk598LMlNA)Z(PzUpkA9#BVW\\+VTtOP^=Srl%Ue67DzG%%IMNk)ScE/9%%Z%AP#BVpeX%W%_F#8c+@9A9B%OT5RUc+_dY%_^S%WVZeGYKE_TYA9%#Lt_H!FBX9zXADd\\7L!=%_ed##6e5PORXQF%GcZ@JTt%_8JI+rBPQW6VEXr9WI6%EHM)=UIk",Z408_SOLUTION),
-		
+		new Cipher("Celebrity Cypher", "zRO1+ dI^2Y3lp IZY+FBI>c+ O<YL>4F, B5 V6 W73 Y89M M!@# Md z$Mp Iq", null)
 		
 	};
-	
+
 	public static String alphabet408 = "ABDEFGHIJKLMNOPQRSTUVWXYZ56789cdefjklpqrtz!#%()=+/@\\^_";
 	public static String decoder408 = "wlnesattfsthenifgaoibeouetesaivocdxiaemrrdollnhpeksrny";
 	public static Map<Character, Character> decoderMap;
@@ -207,6 +207,13 @@ public class Ciphers {
 		for (int i=0; i<cipher.length; i++) {
 			FileUtil.writeText(path + "/cipher_" + i + ".txt", cipher[i].cipher);
 		}
+	}
+	
+	/** get the cipher using the given description */
+	public static Cipher cipherByDescription(String description) {
+		for (Cipher c : cipher)
+			if (description.equalsIgnoreCase(c.description)) return c;
+		return null;
 	}
 	
 	/* known solutions (full text) */
@@ -263,6 +270,7 @@ public class Ciphers {
 	/** return a map of symbol counts for the given cipher text */
 	public static Map<Character, Integer> countMap(String str) {
 		Map<Character, Integer> symbolCounts = new HashMap<Character, Integer>();
+		if (str == null) return symbolCounts;
 		for (int i=0; i<str.length(); i++) {
 			char ch = str.charAt(i);
 			Integer val = symbolCounts.get(ch);

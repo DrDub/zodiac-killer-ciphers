@@ -103,6 +103,11 @@ public class ProblemTranspositions extends Problem implements SimpleProblemForm 
 		return ((float)sum)/pop;
 	}
 
+	/** TODO: this is just a stub to make this compile.  where is the real keyFrom? */
+	StringBuffer keyFrom(int[] genome) {
+		return new StringBuffer();
+	}
+	
 	/** multiobjective evaluator */
 	public void evaluate(EvolutionState state, Individual ind,
 			int subpopulation, int threadnum) {
@@ -167,7 +172,8 @@ public class ProblemTranspositions extends Problem implements SimpleProblemForm 
 			
 			//int sensitivity = (int) (((float)state.generation)/GEN_SCALE*genome.length + 1);
 			MultiObjectiveStatistics stat = (MultiObjectiveStatistics) state.statistics;
-			int sensitivity = (int) (((float)stat.gensSinceReset)/Settings.GEN_SCALE*genome.length + 1);
+			int sensitivity = 0; // TODO: the below didn't compile so just forced this 
+			//int sensitivity = (int) (((float)stat.gensSinceReset)/Settings.GEN_SCALE*genome.length + 1);
 			scores[2] = nonSimilarity(genome, sensitivity, state);
 
 			// punish objectives based on iocDiff
@@ -183,7 +189,11 @@ public class ProblemTranspositions extends Problem implements SimpleProblemForm 
 			vec.decoded = decoded;
 			vec.decoder = decoder;
 			
-			vec.zodiacscore = zodiacScore(decoded);
+			//TODO: find real zodiacScore method.  vec.zodiacscore = zodiacScore(decoded);
+			vec.zodiacscore = 0;
+			
+			
+			
 			//scores[0] = vec.zodiacscore;
 			
 	        ((MultiObjectiveFitness)ind.fitness).setObjectives(state, scores);
