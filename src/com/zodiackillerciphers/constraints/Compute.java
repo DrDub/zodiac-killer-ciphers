@@ -34,7 +34,8 @@ public class Compute {
 		for (int i=0; i<cipher.length()-1; i++) {
 			for (int j=i+1; j<cipher.length() && (j-i+1) <= maxLength; j++) {
 				String sub = cipher.substring(i,j+1);
-				Info info = new Info(sub, i);
+				Info info = new Info(sub, i, true);
+				if (solution != null) info.plaintext = solution.substring(i,j+1); // the actual solution
 				Integer val = info.counts.get(sub.charAt(0));
 				if (val < 2) continue;
 				val = info.counts.get(sub.charAt(sub.length()-1));
@@ -43,7 +44,9 @@ public class Compute {
 				//float score = score(sub, counts);
 				if (info.substring.length() > maxLength) continue;
 				if (info.probability > maxProbability) continue;
-				System.out.println(info);
+				
+				
+				System.out.println("Constraint: " + info);
 				
 				int key = info.substring.length();
 				List<Info> list = map.get(key);
@@ -61,10 +64,6 @@ public class Compute {
 	public static void main(String[] args) {
 		Cipher c = Ciphers.cipher[Integer.valueOf(args[0])];
 		constraints(c.cipher, c.solution, Integer.valueOf(args[1]), Float.valueOf(args[2]));
-		Info info = new Info("ABCA", 0);
-		System.out.println(info);
-		System.out.println(info.fit("THIS"));
-		System.out.println(info.fit("THAT"));
 	}
 	
 }

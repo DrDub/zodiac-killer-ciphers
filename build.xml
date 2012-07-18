@@ -17,6 +17,7 @@
 		<javac verbose="false" srcdir="src" destdir="bin" classpathref="cp_build" debug="true" encoding="ISO-8859-1">
 			<include name="**/*.java"/>
 			<exclude name="cgp/**/*"/>
+			<exclude name="**/old/**/*.java"/>
 		</javac>
 	</target>
 
@@ -54,7 +55,18 @@
 			<arg value="${reader.corpus.gutenberg}"/>
 			<arg value="${reader.corpus.zodiac}"/>
 			<arg value="${reader.corpus.tmp}"/>
+			<arg value="${reader.min.substring.length}"/>
 			<arg value="${reader.max.substring.length}"/>
+			<jvmarg value="-Xmx2048M"/>
+		</java>
+    </target>
+
+	<!-- search a big collection of text for misspellings / unique words in common with the Zodiac correspondences --> 
+    <target name="corpus_misspell" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.corpus.Misspellings" classpathref="cp_run">
+			<arg value="${reader.corpus.gutenberg}"/>
+			<arg value="${reader.corpus.tmp}"/>
+			<arg value="${processor.prefix.gutenberg}"/>
 			<jvmarg value="-Xmx2048M"/>
 		</java>
     </target>
@@ -67,7 +79,7 @@
 			<arg value="${reader.corpus.tmp}"/>
 			<arg value="${constraints.maxlength}"/>
 			<arg value="${constraints.maxprobability}"/>
-<!--			<jvmarg value="-Xmx2048M"/>-->
+			<jvmarg value="-Xmx2048M"/>
 		</java>
     </target>
 	
@@ -113,5 +125,33 @@
 			<jvmarg value="-Xmx2048M"/>
 		</java>
     </target>
+	
+	<!-- process the constraints search results file -->
+    <target name="process_search_constraints_results" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.corpus.SearchConstraintsProcessor" classpathref="cp_run">
+			<arg value="${processor.constraints.results}"/>
+			<jvmarg value="-Xmx4192M"/>
+		</java>
+    </target>
+
+	<!-- make lucene index for gutenberg string patterns --> 
+    <target name="gutenberg_lucene_indexer" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.corpus.GutenbergLuceneIndexer" classpathref="cp_run">
+			<arg value="${lucene.index.gutenberg.nospaces}"/>
+			<arg value="${reader.corpus.tmp}"/>
+			<arg value="${reader.corpus.gutenberg}"/>
+			<arg value="${lucene.min.substring.length}"/>
+			<arg value="${lucene.max.substring.length}"/>
+			<jvmarg value="-Xmx2048M"/>                  
+			<jvmarg value="-XX:-UseGCOverheadLimit"/>
+		</java>
+    </target>
+	
+    <target name="heap_test" depends="build">
+        <java fork="true" classname="com.zodiackillerciphers.constraints.TopHeap" classpathref="cp_run">
+			<jvmarg value="-Xmx2048M"/>                  
+		</java>
+    </target>
+
 	
 </project>

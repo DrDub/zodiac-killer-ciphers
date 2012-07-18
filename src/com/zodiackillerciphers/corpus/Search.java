@@ -14,7 +14,7 @@ public class Search {
 	 * results, include 1) name of corpus that matched, 2) list of zodiac
 	 * correspondences that matched
 	 */
-	public static void search(String dirCorpus, String dirZodiac, String dirTmp, int maxSubstringLength) {
+	public static void search(String dirCorpus, String dirZodiac, String dirTmp, int minSubstringLength, int maxSubstringLength) {
 
 		MapBean bean = Processor.generateMap(dirZodiac, maxSubstringLength, 1);
 		for (String key : bean.mapCounts.keySet()) {
@@ -52,7 +52,7 @@ public class Search {
 					Integer val = bean.mapCounts.get(key);
 					if (val == null) break;
 					val++; bean.mapCounts.put(key, val);
-					if (key.length() > 9 && val < 100) {
+					if (key.length() >= minSubstringLength && val < 100) {
 						System.out.println("Substring match: " + (j-i+1) + ", " + file.getAbsolutePath() + ", " + key + ", " + val);
 					}
 				}
@@ -64,7 +64,7 @@ public class Search {
 	}
 	
 	public static String read(File file, String dirTmp) {
-		System.out.println(file.getAbsolutePath());
+		System.out.println("Search.read " + file.getAbsolutePath());
 		if (file.getName().toLowerCase().endsWith(".zip")) {
 			return Zip.loadFrom(file, dirTmp);
 		} else if (file.getName().toLowerCase().endsWith(".txt")) {
@@ -81,6 +81,6 @@ public class Search {
 	
 
 	public static void main(String[] args) {
-		search(args[0], args[1], args[2], Integer.valueOf(args[3]));
+		search(args[0], args[1], args[2], Integer.valueOf(args[3]), Integer.valueOf(args[4]));
 	}
 }

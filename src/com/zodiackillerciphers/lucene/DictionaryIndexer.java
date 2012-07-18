@@ -163,7 +163,9 @@ public class DictionaryIndexer {
 		return maximums;
 	}
 	
-	public static String patterns(String word) {
+	public static String patterns(String word) { return patterns(word, false);} 
+	
+	public static String patterns(String word, boolean positions) {
 		Map<Character, List<Integer>> map = new HashMap<Character, List<Integer>>();
 		
 		for (int i=0; i<word.length(); i++) {
@@ -178,12 +180,33 @@ public class DictionaryIndexer {
 		for (Character ch : map.keySet()) {
 			List<Integer> list = map.get(ch);
 			if (list.size() > 1) {
+				
+				List<Integer> pairs = new ArrayList<Integer>();
 				for (int i=0; i<word.length(); i++) {
 					char ch2 = word.charAt(i);
-					if (ch2 == ch) sb.append("X");
-					else sb.append("a");
+					if (ch2 == ch) {
+						if (positions) {
+							//if (sb.length() > 0 && sb.charAt(sb.length()-1) != ' ') sb.append(",");
+							//sb.append(i);
+							pairs.add(i);
+						}
+						else {
+							sb.append("X");
+						}
+					}
+					else if (!positions) sb.append("a");
 				}
-				sb.append(" ");
+				//for (int i=0; i<pairs.size(); i++) System.out.println(pairs.get(i));
+				//System.out.println("===");
+				
+				if (positions && pairs.size() > 0) {
+					for (int i=0; i<pairs.size()-1; i++) {
+						for (int j=i+1; j<pairs.size(); j++) {
+							sb.append(pairs.get(i)+","+pairs.get(j)+" ");
+						}
+					}
+				}
+				if (!positions) sb.append(" ");
 			}
 		}
 		return sb.toString();
@@ -408,7 +431,7 @@ public class DictionaryIndexer {
 		maxZ = maximums(ZODIAC_DICTIONARY, true);
 		
 		processFile(DICTIONARY, false);
-		LuceneService.init();
+		LuceneService.init(ZODIAC_INDEX);
 		
 		processFile(ZODIAC_DICTIONARY, true);
 		
@@ -466,7 +489,7 @@ public class DictionaryIndexer {
 			
 			r.close();
 			
-			LuceneService.init();
+			LuceneService.init(ZODIAC_INDEX);
 			Results re = LuceneService.query("+word:this");
 			if (re != null && re.docs != null) {
 				for (Document d : re.docs) System.out.println("found " + d);
@@ -487,7 +510,7 @@ public class DictionaryIndexer {
 	
 	public static void testSort() {
 		try {
-			LuceneService.init();
+			LuceneService.init(ZODIAC_INDEX);
 			Sort s = new Sort(new SortField("score", SortField.FLOAT, true));
 			Results re = LuceneService.query("+patterns:XaaXa +patterns:aXXaa", s, 10);
 			for (Document d : re.docs) {
@@ -506,8 +529,12 @@ public class DictionaryIndexer {
 	
 
 	public static void main(String[] args) {
-		//System.out.println(patterns("that"));
-		index();
+		System.out.println(patterns("SNOTTHATDIGNITYOFPOSITIONWHICHITS", false));
+		System.out.println(patterns("^UIk7qTtNQYD5)S(/9#BPORAU%fRlqEk^", false));
+		System.out.println(patterns("SNOTTHATDIGNITYOFPOSITIONWHICHITS", true));
+		System.out.println(patterns("^UIk7qTtNQYD5)S(/9#BPORAU%fRlqEk^", true));
+		
+		//index();
 		//dumpAll();
 		//testSort();
 	}

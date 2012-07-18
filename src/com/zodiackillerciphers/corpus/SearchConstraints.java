@@ -1,6 +1,9 @@
 package com.zodiackillerciphers.corpus;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,9 +13,13 @@ import com.zodiackillerciphers.ciphers.Cipher;
 import com.zodiackillerciphers.ciphers.Ciphers;
 import com.zodiackillerciphers.constraints.Compute;
 import com.zodiackillerciphers.constraints.Info;
+import com.zodiackillerciphers.constraints.TopHeap;
 import com.zodiackillerciphers.io.FileUtil;
+import com.zodiackillerciphers.lucene.NGrams;
 
 public class SearchConstraints {
+	
+	static int NUM_THREADS = 20;
 	/** search corpus using pairwise constraints */
 	public static void search(String cipher, String solution, String dirCorpus, String dirTmp, int maxLength, float maxProbability) {
 		System.out.println("dirCorpus " + dirCorpus);
@@ -29,6 +36,12 @@ public class SearchConstraints {
 		System.out.println("Number of files to process: " + files.size());
 		long length = 0;
 		String text;
+		
+		TopHeap heap = new TopHeap(1000);
+		List<SearchConstraintsThread> threads = new ArrayList<SearchConstraintsThread>();
+		Long timeStartTotal = new Date().getTime();
+		Long timeStart = new Date().getTime();
+		Long timeDump = new Date().getTime();
 		for (int f=0; f<files.size(); f++) {
 			float p = 100*((float)f)/files.size();
 			System.out.println(f + " of " + files.size() + " (" + (int) p + "%)");
@@ -36,6 +49,7 @@ public class SearchConstraints {
 			if (file.getName().toLowerCase().endsWith("_h.zip")) {
 				continue; // ignoring HTML zips 
 			}
+			
 			try {
 				text = Search.read(file, dirTmp);
 			} catch (Exception e) {
@@ -44,27 +58,60 @@ public class SearchConstraints {
 			}
 			if (text == null) continue;
 			length += text.length();
-			// convert text to uppercase alphabet stream
-			StringBuffer converted = FileUtil.convert(text);
-			for (int i=0; i<converted.length(); i++) {
-				
-				for (Integer len : map.keySet()) {
-					if (i+len > converted.length()) continue;
-					List<Info> list = map.get(len);
-					String substring = converted.substring(i, i+len);
-					if (spurious(substring)) continue; // ignore putative solutions that have too many repeated plaintext letters
-					for (Info info : list) {
-						if (info.fit(substring)) {
-							System.out.println("Constraint match: " + file.getAbsolutePath() + ", " + substring + ", " + info + match(info, substring, solution));
-						}
-					}
+			
+			threads.add(new SearchConstraintsThread(file, text, heap, map, cipher, solution));
+			
+			if (threads.size() == NUM_THREADS || f == files.size()-1) {
+				// ready to kick off threads
+				for (int i=0; i<threads.size(); i++) threads.get(i).start(); 
+				// wait for them to complete
+				for (int i=0; i<threads.size(); i++) {
+					try {
+						threads.get(i).join();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
 				}
+				// reset thread queue 
+				threads.clear();
 				
+				Long elapsed = new Date().getTime() - timeStart;
+				System.out.println("Current thread batch completed in " + elapsed + " ms.");
+				timeStart = new Date().getTime();
+				System.out.println("Total elapsed " + (new Date().getTime() - timeStartTotal) + " for total length " + length);
+				
+				if ((new Date().getTime() - timeDump) > 7200000) { // dump heap every two hours just in case.
+					System.out.println("Dump interval reached.");
+					heap.dump();
+					timeDump = new Date().getTime();
+				}
 			}
 		}
-		
+		heap.dump();
 		System.out.println("Done processing files.  Total text length: " + length);
 
+	}
+
+	/** return a zkscore of the partially decoded plaintext imposed by the given constraint match */
+	public static float score(Info info, String cipher) {
+		Map<Character, Character> decoder = new HashMap<Character, Character>();
+		for (int i=0; i<info.substring.length(); i++) {
+			char chcipher = info.substring.charAt(i);
+			char chplain = info.plaintext.charAt(i);
+			decoder.put(chcipher, chplain);
+		}
+		StringBuffer decoded = new StringBuffer();
+		for (int i=0; i<cipher.length(); i++) {
+			char key = cipher.charAt(i);
+			Character val = decoder.get(key);
+			if (val == null || (i >= info.index &&  i <= info.index+info.substring.length()-1)) decoded.append(" ");
+			else decoded.append(val);
+		}
+		
+		//System.out.println("scoring cipher " + info.substring + " plaintext " + info.plaintext + " decoded " + decoded);
+		return NGrams.zkscore(decoded);
+		
 	}
 	
 	public static boolean spurious(String substring) {
@@ -78,14 +125,14 @@ public class SearchConstraints {
 	}
 	
 	/** determine correctness of putative solution */
-	public static String match(Info info, String putative, String solution) {
-		if (solution == null) return "";
+	public static float match(Info info, String putative, String solution) {
+		if (solution == null) return 0f;
 		
 		int count = 0;
 		for (int i=0; i<info.substring.length(); i++) {
 			if (putative.charAt(i) == solution.charAt(i+info.index)) count++;
 		}
-		return ", " + solution.substring(info.index, info.index+putative.length()) + ", " + ((float)count)/info.substring.length();
+		return ((float)count)/info.substring.length();
 	}
 	
 	

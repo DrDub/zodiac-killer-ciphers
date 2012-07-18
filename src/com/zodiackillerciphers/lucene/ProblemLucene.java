@@ -53,7 +53,7 @@ public class ProblemLucene extends Problem implements SimpleProblemForm {
 
 	
 	void init() {
-		LuceneService.init();
+		LuceneService.init("");
 		Scorer.initWordSymbolCounts(Settings.cipher);
 	}
 	

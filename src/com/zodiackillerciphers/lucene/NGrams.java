@@ -74,9 +74,10 @@ public class NGrams {
 		}
 	}
 	
+	// expects uppercase ngram 
 	public static Float valueFor(String ngram) {
 		if (ngram == null) return 0f;
-		Float val = ngramMaps.get(ngram.length()).get(ngram.toUpperCase());
+		Float val = ngramMaps.get(ngram.length()).get(ngram);
 		return val == null ? 0f : val;
 	}
 	
@@ -90,14 +91,23 @@ public class NGrams {
 		}
 	}
 	
-	/** return zkdecrypto-style score for the given string */
-	public static float zkscore(StringBuffer sb) {
+	/** return zkdecrypto-style score for the given string.  expects uppercase string. */
+	public static float zkscore(StringBuffer sb) { return zkscore(sb, false); }
+	public static float zkscore(StringBuffer sb, boolean uniquesOnly) {
 		if (sb == null) return 0;
-		
+		Set<String> seen = null;
+		if (uniquesOnly) seen = new HashSet<String>();
 		float result = 0;
 		for (int n=2; n<6; n++) {
 			float sum = 0;
-			for (int i=0; i<sb.length()-n+1; i++) sum += valueFor(sb.substring(i, i+n));
+			for (int i=0; i<sb.length()-n+1; i++) {
+				String sub = sb.substring(i, i+n);
+				if (!uniquesOnly || (uniquesOnly && !seen.contains(sub))) {
+					sum += valueFor(sub);
+					//if (valueFor(sub) > 0) System.out.println(sub + " " + valueFor(sub));
+				}
+				if (uniquesOnly) seen.add(sub);
+			}
 			//System.out.println("len " + n + " sum " + sum);
 			sum = sum/((float)Math.pow(2, 5-n));
 			result += sum;
@@ -1228,7 +1238,7 @@ public class NGrams {
 		//testBrute();
 		//testBadNgraphs();
 		//testScoreNgrams();
-		System.out.println(zkscore(new StringBuffer("themthemt")));
+		System.out.println(zkscore(new StringBuffer("ey ant hta tr hm he yea hn te hn he csh eh ae ye emt ia yes ye ym hehe heai he ye he")));
 
 		/*
 		StringBuffer sb = new StringBuffer("esenenesseshteetsehereaseetesseharhtasetesheretasthesnesseshlestheheestheterresthereasehesestheheetteshertaeesehesetesstenesssehetheshhereshetheheetthressesheateresreetesereshettertheshettesheearrernsettlethehersthehestterteteteetheelheseteeelessherehersestereteresstesstheeherenessetlessherehehessereselesssethereeeahesehehereaseeealesstretesseetelserstetheresserteshetsseresterheetterseteeheereetehethhtete");
