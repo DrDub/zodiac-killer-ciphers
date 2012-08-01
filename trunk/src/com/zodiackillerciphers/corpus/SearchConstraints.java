@@ -94,7 +94,8 @@ public class SearchConstraints {
 	}
 
 	/** return a zkscore of the partially decoded plaintext imposed by the given constraint match */
-	public static float score(Info info, String cipher) {
+	public static float score(Info info, String cipher) { return score(info, cipher, false, false); }
+	public static float score(Info info, String cipher, boolean uniquesOnly, boolean gapsOnly) {
 		Map<Character, Character> decoder = new HashMap<Character, Character>();
 		for (int i=0; i<info.substring.length(); i++) {
 			char chcipher = info.substring.charAt(i);
@@ -105,12 +106,13 @@ public class SearchConstraints {
 		for (int i=0; i<cipher.length(); i++) {
 			char key = cipher.charAt(i);
 			Character val = decoder.get(key);
-			if (val == null || (i >= info.index &&  i <= info.index+info.substring.length()-1)) decoded.append(" ");
+			if (val == null || (i >= info.index &&  i <= info.index+info.substring.length()-1)) decoded.append("?");
 			else decoded.append(val);
 		}
 		
-		//System.out.println("scoring cipher " + info.substring + " plaintext " + info.plaintext + " decoded " + decoded);
-		return NGrams.zkscore(decoded);
+		float val = NGrams.zkscore(decoded, uniquesOnly, gapsOnly); 
+		//System.out.println(val + ", " + uniquesOnly + ", " + gapsOnly + ", for cipher " + info.substring + " plaintext " + info.plaintext + " decoded " + decoded);
+		return val;
 		
 	}
 	
