@@ -1,6 +1,7 @@
 package com.zodiackillerciphers.lucene;
 
 import java.io.BufferedReader;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -14,12 +15,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.zodiackillerciphers.corpus.SearchConstraints;
 import com.zodiackillerciphers.io.FileUtil;
 
 import ec.util.MersenneTwisterFast;
 
 public class NGrams {
-	public static String DIR = "/Users/doranchak/projects/work/java/zodiac/zkdecrypto-1.2-newest/ZKDV12/language/eng";
+	/** if true, use gutenberg ngrams instead of zkd ngrams */
+	public static boolean GUTENBERG = true;
+	/** if true, compute gapped ngrams when loading ngram statistics */
+	public static boolean GAPPED = false;
+	public static String DIR = "tools/zkdecrypto/language/eng";
+	public static String DIR2 = "docs/ngrams";
+	
+	/** zkdecrypto files */
 	public static String[] FILES = new String[] {
 		"unigraphs.txt",
 		"bigraphs.txt",
@@ -28,18 +37,30 @@ public class NGrams {
 		"pentagraphs.txt"
 	};
 	
+	/** gutenberg files */
+	public static String[] FILES2 = new String[] { // these MUST be sorted in descending order of frquency
+		"sorted_1.txt",
+		"sorted_2_gaps.txt",
+		"sorted_3_gaps.txt",
+		"sorted_4_gaps.txt",
+		"sorted_5_gaps.txt",
+		"sorted_6_gaps.txt"
+	};
+	
 	public static Map<Integer, Map<String, Float>> ngramMaps;
-	public static Map<Integer, Integer> ngramTotals;
+	public static Map<Integer, Float> ngramTotals;
+	
 	static {
 		ngramMaps = new HashMap<Integer, Map<String, Float>>();
-		ngramTotals = new HashMap<Integer, Integer>();
-		for (int i=0; i<FILES.length; i++) {
-			loadFrom(FILES[i], i+1);
+		ngramTotals = new HashMap<Integer, Float>();
+		String[] files = GUTENBERG ? FILES2 : FILES;
+		for (int i=0; i<files.length; i++) {
+			loadFrom(files[i], i+1);
 		}
 	}
 	
 	static void loadFrom(String s, int n) {
-		String full = DIR + "/" + s;
+		String full = (GUTENBERG ? DIR2 : DIR) + "/" + s;
 		System.out.println("loading from [" + full + "]...");
 
 		BufferedReader input = null;
@@ -47,17 +68,36 @@ public class NGrams {
 		try {
 			input = new BufferedReader(new FileReader(new File(full)));
 			String line = null; // not declared within while loop
-			int sum = 0;
+			float sum = 0;
+			int linecount = 0;
+			float max = 0;
 			while ((line = input.readLine()) != null) {
+				linecount++;
+				if (linecount % 10000 == 0) System.out.println("Read [" + linecount + "] lines...");
 				int col = n == 1 ? 3 : 2;
-				String[] split = line.split(" ");
+				String delim = GUTENBERG ? "," : " ";
+				String[] split = line.split(delim);
 				String key = split[0];
-				Float val = Float.valueOf(split[col]);
+				Float val = null;
+				if (GUTENBERG) {
+					Float total = Float.valueOf(split[1]);
+					//if (n > 4 && total < 100) break; // ignore "the long tail" of low frequency ngrams
+					if (linecount == 1) {
+						max = Float.valueOf(split[1]);
+						System.out.println("Max: " + max);
+					}
+					//val = ((float) total)/max; // normalized to range [0,1]
+					val = total;
+				} else val = Float.valueOf(split[col]);
 				if (n > 1) sum += val;
 				Map<String, Float> map = ngramMaps.get(n);
 				if (map == null) map = new HashMap<String, Float>();
 				map.put(key, val);
 				ngramMaps.put(n, map);
+				
+				if (GAPPED && n > 2) {
+					gapsFor(key);
+				}
 			}
 			if (n > 1) ngramTotals.put(n, sum);
 			System.out.println("read " + counter + " lines.  sum: " + sum);
@@ -73,12 +113,80 @@ public class NGrams {
 			e1.printStackTrace();
 		}
 	}
+
+	/** generate gapped ngram statistics based on the given non-gapped ngram */
+	static void gapsFor(String ngram) {
+		if (ngram.length() < 3) return;
+		
+		for (int numGaps = 1; numGaps <= ngram.length() - 2; numGaps++) {
+			int[] positions = new int[numGaps];
+			for (int i=0; i<numGaps; i++) positions[i] = i;
+			
+			int i=numGaps-1;
+			while (true) {
+				gapFor(ngram, positions, ngram.length() - numGaps);
+				if (positions[0] == ngram.length() - numGaps) break; // stop condition
+				positions[i]++;
+				
+				if (positions[i] == ngram.length()) {
+					positions[i]--;
+					while (i > 0) {
+						i--;
+						if (positions[i] != positions[i+1] - 1) {
+							break;
+						}
+					}
+					positions[i++]++;
+					while (i < positions.length) {
+						positions[i] = positions[i-1] + 1;
+						i++;
+					}
+				}
+				i=numGaps-1;
+			}
+			
+		}
+		
+	}
+	
+	/** n is the number of non-gapped positions.  for example, "A???C" is treated as a bigram, so n=2. */
+	static void gapFor(String ngram, int[] positions, int n) {
+		StringBuffer sb = new StringBuffer(ngram);
+		for (int i=0; i<positions.length; i++) sb.setCharAt(positions[i], '?');
+		Map<String, Float> map = ngramMaps.get(n);
+		if (map == null) map = new HashMap<String, Float>();
+		String key = sb.toString(); // gapped ngram is key
+		Float val = map.get(key);
+		if (val == null) val = 0f;
+		//System.out.println(key + ", " + ngram);
+		val = Math.max(val, ngramMaps.get(ngram.length()).get(ngram)); // gapped ngram's val is max of vals for matching non-gapped ngrams.
+		map.put(key, val);
+		ngramMaps.put(n, map);
+	}
 	
 	// expects uppercase ngram 
 	public static Float valueFor(String ngram) {
 		if (ngram == null) return 0f;
+		if (ngramMaps.get(ngram.length()) == null) return 0f;
 		Float val = ngramMaps.get(ngram.length()).get(ngram);
+		//System.out.println("valueFor " + ngram + " L " + ngram.length() + ": " + val);
 		return val == null ? 0f : val;
+	}
+	// version just for gapped ngrams.  equivalent length is predetermined.
+	public static Float valueForGaps(String ngram, int L) {
+		if (ngram == null) return 0f;
+		if (L < 2) return 0f;
+		if (ngramMaps.get(L) == null) return 0f;
+		Float val = ngramMaps.get(L).get(ngram);
+		//System.out.println("valueForGaps " + ngram + " L " + L + ": " + val);
+		return val == null ? 0f : val;
+	}
+	
+	public static int lengthFrom(String ngram) {
+		if (ngram == null) return 0;
+		int L = 0;
+		for (int i=0; i<ngram.length(); i++) if (ngram.charAt(i) != '?') L++;
+		return L;
 	}
 	
 	public static void testNgrams() {
@@ -92,26 +200,48 @@ public class NGrams {
 	}
 	
 	/** return zkdecrypto-style score for the given string.  expects uppercase string. */
-	public static float zkscore(StringBuffer sb) { return zkscore(sb, false); }
-	public static float zkscore(StringBuffer sb, boolean uniquesOnly) {
+	public static float zkscore(StringBuffer sb) { return zkscore(sb, false, false); }
+	public static float zkscore(StringBuffer sb, boolean uniquesOnly) { return zkscore(sb, uniquesOnly, false); }
+	public static float zkscore(StringBuffer sb, boolean uniquesOnly, boolean gapsOnly) {
 		if (sb == null) return 0;
 		Set<String> seen = null;
 		if (uniquesOnly) seen = new HashSet<String>();
 		float result = 0;
-		for (int n=2; n<6; n++) {
-			float sum = 0;
+		
+		float[] sums = new float[7];
+		for (int n=2; n<=6; n++) {
+			//float sum = 0;
 			for (int i=0; i<sb.length()-n+1; i++) {
+				int L=n; // ngram length is n unless it has gaps
 				String sub = sb.substring(i, i+n);
+				if (gapsOnly) {
+					if (sub.indexOf("?") == -1) continue;
+					L = lengthFrom(sub);
+					if (L < 2) continue;
+					//System.out.println("ngram " + sub + ", L " + L);
+				} else {
+					if (sub.indexOf("?") > -1) continue;
+				}
 				if (!uniquesOnly || (uniquesOnly && !seen.contains(sub))) {
-					sum += valueFor(sub);
+					if (gapsOnly) sums[L] += valueForGaps(sub, L);
+					else sums[L] += valueFor(sub);
 					//if (valueFor(sub) > 0) System.out.println(sub + " " + valueFor(sub));
 				}
 				if (uniquesOnly) seen.add(sub);
 			}
 			//System.out.println("len " + n + " sum " + sum);
-			sum = sum/((float)Math.pow(2, 5-n));
-			result += sum;
+			//sum = sum/((float)Math.pow(2, 6-L));
+			//result += sum;
 		}
+		String line = sb + "	" + uniquesOnly + "	" + gapsOnly + "	";
+		for (int L=2; L<7; L++) {
+			//System.out.println("sums[" + L + "] = " + sums[L] + ", factor " + Math.pow(2, 6-L));
+			line += sums[L] + "	";
+			sums[L] /= Math.pow(2, 6-L);
+			//System.out.println("adjusted sums[" + L + "] = " + sums[L]);
+			result += sums[L];
+		}
+		System.out.println(line);
 		return result;
 	}
 
@@ -1229,6 +1359,17 @@ public class NGrams {
 		}
 	}
 	
+	static void dumpNgramStats() {
+		for (int n : ngramMaps.keySet()) {
+			Map<String, Float> map = ngramMaps.get(n);
+			for (String key : map.keySet()) {
+				Float val = map.get(key);
+				System.out.println(n+"," + key + "," + val);
+			}
+		}
+		
+	}
+	
 	public static void main(String[] args) {
 		//testNgrams();
 		//testZkscore();
@@ -1238,8 +1379,9 @@ public class NGrams {
 		//testBrute();
 		//testBadNgraphs();
 		//testScoreNgrams();
-		System.out.println(zkscore(new StringBuffer("ey ant hta tr hm he yea hn te hn he csh eh ae ye emt ia yes ye ym hehe heai he ye he")));
-
+		//System.out.println(zkscore(new StringBuffer("ey ant hta tr hm he yea hn te hn he csh eh ae ye emt ia yes ye ym hehe heai he ye he")));
+		//gapsFor("ABCDEF");
+		//dumpNgramStats();
 		/*
 		StringBuffer sb = new StringBuffer("esenenesseshteetsehereaseetesseharhtasetesheretasthesnesseshlestheheestheterresthereasehesestheheetteshertaeesehesetesstenesssehetheshhereshetheheetthressesheateresreetesereshettertheshettesheearrernsettlethehersthehestterteteteetheelheseteeelessherehersestereteresstesstheeherenessetlessherehehessereselesssethereeeahesehehereaseeealesstretesseetelserstetheresserteshetsseresterheetterseteeheereetehethhtete");
 		for (int n=2; n<6; n++) {
