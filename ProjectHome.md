@@ -1,0 +1,1 @@
+This is a repository for my experiments, utilities, and projects surrounding investigations of the ciphers created by the Zodiac killer, a famous unsolved case dating back to the late 1960s.  One of his ciphers was solved, but to date the others remain a mystery.
